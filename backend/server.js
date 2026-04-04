@@ -1,52 +1,75 @@
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/blog';
 
 app.use(cors());
 app.use(express.json());
 
-const posts = [
-  {
-    id: '1',
-    title: 'The Future of AI in Coding',
-    author: 'Antigravity User',
-    date: 'April 3, 2026',
-    excerpt: 'AI is rapidly changing how we write and understand code. From autocomplete to fully autonomous coding agents...',
-    content: 'Full content for The Future of AI in Coding. AI models are becoming more sophisticated, allowing for complex reasoning and multi-step tasks in software development. This post explores the implications of these advancements.'
-  },
-  {
-    id: '2',
-    title: 'Mastering Modern CSS Layouts',
-    author: 'Design Guru',
-    date: 'April 2, 2026',
-    excerpt: 'Flexbox and Grid are powerful tools for creating responsive and dynamic layouts. Learn how to use them effectively...',
-    content: 'Full content for Mastering Modern CSS Layouts. Modern CSS has evolved significantly, offering native layout engines that make responsive design easier than ever. Grid and Flexbox are the pillars of current web layout design.'
-  },
-  {
-    id: '3',
-    title: 'Building Premium User Interfaces',
-    author: 'UI/UX Specialist',
-    date: 'April 1, 2026',
-    excerpt: 'Great design is more than just colors. It\'s about transitions, HSL color harmony, and micro-animations...',
-    content: 'Full content for Building Premium User Interfaces. Premium UI focuses on subtle interactions, clear typography, and harmonious color schemes. This post covers the fundamentals of modern design systems and how to implement them.'
-  }
-];
+// MongoDB Connection
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Could not connect to MongoDB', err));
 
-app.get('/api/posts', (req, res) => {
-  res.json(posts);
+// Define Post Schema
+const postSchema = new mongoose.Schema({
+  title: String,
+  author: String,
+  date: { type: String, default: () => new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) },
+  excerpt: String,
+  content: String
 });
 
-app.get('/api/posts/:id', (req, res) => {
-  const post = posts.find(p => p.id === req.params.id);
-  if (post) {
-    res.json(post);
-  } else {
-    res.status(404).json({ message: 'Post not found' });
+const Post = mongoose.model('Post', postSchema);
+
+// Seed data if empty
+const seedData = async () => {
+  const count = await Post.countDocuments();
+  if (count === 0) {
+    await Post.insertMany([
+      {
+        title: 'The Future of AI in Coding',
+        author: 'Antigravity User',
+        excerpt: 'AI is rapidly changing how we write and understand code...',
+        content: 'Full content for AI in Coding...'
+      },
+      {
+        title: 'Mastering Modern CSS Layouts',
+        author: 'Design Guru',
+        excerpt: 'Flexbox and Grid are powerful tools...',
+        content: 'Full content for CSS Layouts...'
+      }
+    ]);
+    console.log('Database seeded!');
+  }
+};
+seedData();
+
+app.get('/api/posts', async (req, res) => {
+  try {
+    const posts = await Post.find();
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.get('/api/posts/:id', async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (post) {
+      res.json(post);
+    } else {
+      res.status(404).json({ message: 'Post not found' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

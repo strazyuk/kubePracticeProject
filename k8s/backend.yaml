@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: blog-backend
+  namespace: dev
   labels:
     app: blog-backend
 spec:
@@ -20,11 +21,22 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        envFrom:
+        - configMapRef:
+            name: backend-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: blog-backend
+  namespace: dev
 spec:
   selector:
     app: blog-backend

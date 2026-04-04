@@ -1,0 +1,59 @@
+# RBAC: Security and Access Control Configuration
+# 
+# WHY RBAC?
+# Kubernetes uses Role-Based Access Control (RBAC) to decouple permissions (what you can do) 
+# from the identity (who you are). By scoping these permissions to specific namespaces, 
+# we ensure that a user or process can only access the resources they are authorized for, 
+# preventing accidental or malicious changes in sensitive environments like 'prod'.
+
+---
+# 1. ServiceAccount: dev-user
+# WHY?
+# A ServiceAccount is a non-human identity that processes or developers can use to 
+# authenticate with the Kubernetes API. Instead of using cluster-admin credentials, 
+# we create this restricted identity for everyday development tasks.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dev-user
+  namespace: dev
+
+---
+# 2. Role: developer-role
+# WHY?
+# A 'Role' defines a set of permissions WITHIN a single namespace. 
+# We explicitly list the resources and the actions (verbs) allowed.
+# This follows the 'Principle of Least Privilege', where we only grant necessary access.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: dev
+  name: developer-role
+rules:
+- apiGroups: ["", "apps", "networking.k8s.io"] # Core groups for Pods, Services, Deployments, and Ingress
+  resources: ["pods", "services", "deployments", "configmaps", "ingresses", "persistentvolumeclaims"]
+  # Allowed actions: Developers can view, create, and manage their own resources in 'dev'.
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# 3. RoleBinding: dev-developer-binding
+# WHY?
+# A RoleBinding is the bridge that connects the identity (ServiceAccount) 
+# to the permissions (Role). Since this is a RoleBinding (not a ClusterRoleBinding), 
+# the permissions defined in the 'developer-role' are strictly confined to the 'dev' namespace.
+# 
+# IMPORTANT: Because there is NO RoleBinding for 'dev-user' in the 'prod' namespace, 
+# Kubernetes defaults to 'Deny All' for any requests made to 'prod'.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-developer-binding
+  namespace: dev
+subjects:
+- kind: ServiceAccount
+  name: dev-user
+  namespace: dev
+roleRef:
+  kind: Role
+  name: developer-role
+  apiGroup: rbac.authorization.k8s.io
