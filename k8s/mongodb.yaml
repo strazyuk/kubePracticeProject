@@ -1,23 +1,29 @@
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service
 metadata:
-  name: mongodb-pvc
+  name: mongodb
   namespace: dev
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+  # clusterIP: None makes this a Headless Service. 
+  # This allows direct access to individual pods in the StatefulSet (mongodb-0, mongodb-1, etc.)
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: mongodb
   namespace: dev
   labels:
     app: mongodb
 spec:
+  # The serviceName must match the name of the Headless Service we created above.
+  serviceName: "mongodb"
   replicas: 1
   selector:
     matchLabels:
@@ -42,20 +48,13 @@ spec:
         volumeMounts:
         - name: mongodb-storage
           mountPath: /data/db
-      volumes:
-      - name: mongodb-storage
-        persistentVolumeClaim:
-          claimName: mongodb-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mongodb
-  namespace: dev
-spec:
-  selector:
-    app: mongodb
-  ports:
-    - protocol: TCP
-      port: 27017
-      targetPort: 27017
+  # volumeClaimTemplates is the 'StatefulSet way' to manage storage.
+  # Kubernetes will automatically create a PVC for each pod (e.g. mongodb-storage-mongodb-0).
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
