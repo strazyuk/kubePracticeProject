@@ -1,0 +1,65 @@
+# =============================================================
+# The "Control Panel" for the entire application.
+# Change values here to affect all templates at once.
+# =============================================================
+
+namespace: dev
+
+# --- Backend API ---
+backend:
+  image: blog-backend
+  tag: latest
+  replicas: 2
+  port: 5000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# --- Frontend ---
+frontend:
+  image: blog-frontend
+  tag: latest
+  replicas: 2
+  port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# --- MongoDB Database ---
+mongodb:
+  image: mongo
+  tag: "6.0"
+  port: 27017
+  storageSize: 1Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# --- Ingress ---
+ingress:
+  host: blog.local
+
+# --- Autoscaling (HPA) ---
+hpa:
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilization: 50
+
+# --- Resource Quota for the namespace ---
+quota:
+  limitsCpu: "2"
+  limitsMemory: 2Gi
+  requestsCpu: "1"
+  requestsMemory: 1Gi

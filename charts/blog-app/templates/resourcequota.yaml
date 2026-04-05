@@ -1,0 +1,13 @@
+# ResourceQuota caps the total CPU and Memory the entire 'dev' namespace can use.
+# This prevents the dev environment from starving other workloads on the node.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dev-quota
+  namespace: {{ .Values.namespace }}
+spec:
+  hard:
+    limits.cpu: {{ .Values.quota.limitsCpu | quote }}
+    limits.memory: {{ .Values.quota.limitsMemory }}
+    requests.cpu: {{ .Values.quota.requestsCpu | quote }}
+    requests.memory: {{ .Values.quota.requestsMemory }}

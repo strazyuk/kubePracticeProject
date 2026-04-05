@@ -1,0 +1,35 @@
+# ServiceAccount: The unique identity for backend pods.
+# Pods use this instead of the insecure 'default' account.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blog-backend-sa
+  namespace: {{ .Values.namespace }}
+---
+# Role: Defines what the ServiceAccount is ALLOWED to do.
+# Principle of Least Privilege: only read ConfigMaps, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: blog-backend-role
+  namespace: {{ .Values.namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+---
+# RoleBinding: Links the Role to the ServiceAccount.
+# Without this, the Role would exist but never be applied to anything.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: blog-backend-rolebinding
+  namespace: {{ .Values.namespace }}
+subjects:
+- kind: ServiceAccount
+  name: blog-backend-sa
+  namespace: {{ .Values.namespace }}
+roleRef:
+  kind: Role
+  name: blog-backend-role
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-backend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: blog-backend
+spec:
+  # replicas is now pulled from values.yaml — change it in one place!
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      app: blog-backend
+  template:
+    metadata:
+      labels:
+        app: blog-backend
+    spec:
+      # Use our restricted ServiceAccount, not the insecure 'default'
+      serviceAccountName: blog-backend-sa
+      containers:
+      - name: blog-backend
+        image: {{ .Values.backend.image }}:{{ .Values.backend.tag }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.backend.port }}
+        resources:
+          requests:
+            cpu: {{ .Values.backend.resources.requests.cpu }}
+            memory: {{ .Values.backend.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.backend.resources.limits.cpu }}
+            memory: {{ .Values.backend.resources.limits.memory }}
+        # Kubernetes kills and restarts the container if this fails
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: {{ .Values.backend.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        # Kubernetes stops sending traffic until this passes
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: {{ .Values.backend.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        envFrom:
+        - configMapRef:
+            name: backend-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-backend
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: blog-backend
+  ports:
+    - protocol: TCP
+      port: {{ .Values.backend.port }}
+      targetPort: {{ .Values.backend.port }}
+  type: ClusterIP

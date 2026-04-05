@@ -31,7 +31,7 @@ const PostList = () => {
     <div className="container">
       <div className="blog-grid">
         {posts.map(post => (
-          <Link to={`/posts/${post.id}`} key={post.id} className="blog-card glass">
+          <Link to={`/posts/${post._id}`} key={post._id} className="blog-card glass">
             <div className="meta">{post.date} • By {post.author}</div>
             <h2>{post.title}</h2>
             <div className="excerpt">{post.excerpt}</div>

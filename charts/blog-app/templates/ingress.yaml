@@ -2,25 +2,26 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: blog-ingress
-  namespace: dev
-  annotations: {}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
-  - host: blog.local
+  - host: {{ .Values.ingress.host }}
     http:
       paths:
-      - path: /api
+      - path: /api(/|$)(.*)
         pathType: Prefix
         backend:
           service:
             name: blog-backend
             port:
-              number: 5000
+              number: {{ .Values.backend.port }}
       - path: /
         pathType: Prefix
         backend:
           service:
             name: blog-frontend
             port:
-              number: 80
+              number: {{ .Values.frontend.port }}

@@ -1,0 +1,60 @@
+# A Headless Service is required for StatefulSets.
+# clusterIP: None means pods get stable DNS names like mongodb-0, mongodb-1
+# instead of a random load-balanced IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+    - port: {{ .Values.mongodb.port }}
+      targetPort: {{ .Values.mongodb.port }}
+---
+# StatefulSet ensures each pod has a stable identity and its own persistent storage.
+# Unlike a Deployment, pods are named mongodb-0, mongodb-1 (not random hashes).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: {{ .Values.mongodb.image }}:{{ .Values.mongodb.tag }}
+        ports:
+        - containerPort: {{ .Values.mongodb.port }}
+        resources:
+          requests:
+            cpu: {{ .Values.mongodb.resources.requests.cpu }}
+            memory: {{ .Values.mongodb.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.mongodb.resources.limits.cpu }}
+            memory: {{ .Values.mongodb.resources.limits.memory }}
+        # Mount the persistent volume to the standard MongoDB data directory
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+  # volumeClaimTemplates automatically creates a PVC for each pod.
+  # This storage survives pod restarts — your data is never lost.
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: {{ .Values.mongodb.storageSize }}

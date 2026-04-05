@@ -15,6 +15,7 @@ spec:
       labels:
         app: blog-backend
     spec:
+      serviceAccountName: blog-backend-sa  # Use our restricted identity, not the default
       containers:
       - name: blog-backend
         image: blog-backend:latest
@@ -28,6 +29,18 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
         envFrom:
         - configMapRef:
             name: backend-config

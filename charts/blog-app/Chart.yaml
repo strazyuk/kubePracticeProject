@@ -1,0 +1,6 @@
+apiVersion: v2
+name: blog-app
+description: A full-stack blog application (React + Node.js + MongoDB)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

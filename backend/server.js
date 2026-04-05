@@ -48,6 +48,10 @@ const seedData = async () => {
 };
 seedData();
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 app.get('/api/posts', async (req, res) => {
   try {
     const posts = await Post.find();
